@@ -1,0 +1,54 @@
+[account]
+username = "your_username"
+session_file = "./state/session.json"
+
+[archive]
+root = "./archive"
+database = "./state/archive.sqlite3"
+save_metadata = true
+
+[targets]
+# Accounts whose posts/stories should be archived.
+usernames = ["instagram"]
+
+[schedule]
+timezone = "Asia/Tokyo"
+run_on_start = false
+
+[schedule.instants]
+enabled = true
+times = ["08:00", "20:00"]
+jitter_minutes = 30
+
+[schedule.stories]
+enabled = true
+times = ["07:30", "14:30", "21:30"]
+jitter_minutes = 20
+
+[schedule.posts]
+enabled = true
+times = ["18:00"]
+jitter_minutes = 45
+
+[instants]
+thread_amount = 30
+thread_message_limit = 30
+incoming_only = true
+
+[stories]
+# Uses the home reels tray as an update index. This avoids requesting every
+# target's story feed when nothing changed.
+use_reels_tray = true
+
+[posts]
+scan_amount = 12
+
+[pacing]
+# Small delays between target-specific requests for ordinary load pacing.
+min_seconds = 1.0
+max_seconds = 3.0
+
+[backoff]
+# On throttling / temporary Instagram errors, do not immediately retry.
+min_minutes = 60
+max_minutes = 180
