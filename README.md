@@ -17,7 +17,7 @@ The scheduler uses stable daily anchor times plus a small configurable jitter fo
 - Python 3.11+
 - `uv`
 
-The project pins `instagrapi >=3.0.3,<4`, matching the current CAA-login / HTTP/2 generation of instagrapi.
+Dependencies require recent instagrapi 3.2.6+, Typer 0.28+, Rich 15+, and Pillow 13+ (through instagrapi). Python 3.11+ is required.
 
 ## Setup
 
@@ -72,6 +72,39 @@ View last job results:
 ```bash
 uv run ig-archive status
 ```
+
+## Read-only local browser
+
+Browse media already saved to SQLite and the archive directory:
+
+```bash
+uv run ig-archive view
+# open http://127.0.0.1:8765/
+```
+
+Use `--port 9999` to choose another port or `--config path/to/config.toml`.
+The viewer filters by media type and username, pages through results, and previews
+images and videos (including HTTP range requests for playback). It never logs into
+Instagram and never writes to the archive database. No frontend build or extra Web
+framework is required.
+
+**Security:** This is a personal viewer with no authentication. It binds to
+`127.0.0.1` by default. Do not expose it to the public internet or a shared
+network. The media route serves only recognized media files from the configured
+archive directory, never session files or adjacent metadata JSON.
+
+### Updating dependencies
+
+The old `uv.lock` was removed because the available build environment could not
+resolve and verify a new lockfile against PyPI. Generate it locally with:
+
+```bash
+uv lock --upgrade
+uv sync
+```
+
+Commit the regenerated `uv.lock` if you want reproducible installations.
+
 
 ## Default schedule
 

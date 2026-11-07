@@ -10,8 +10,7 @@ from .config import Config
 
 def _new_client(cfg: Config) -> Client:
     cl = Client(delay_range=[cfg.pacing_min_seconds, cfg.pacing_max_seconds])
-    # request_timeout is a separate fixed pause; disable it so [pacing] is the
-    # sole request delay rather than stacking a fixed second on the random range.
+    # request_timeout is an additional fixed pause; keep ordinary pacing in delay_range.
     cl.set_retry_config(request_timeout=0)
     return cl
 
@@ -24,20 +23,18 @@ def _challenge_handler(username: str, choice: ChallengeChoice | None = None):
 
 def interactive_login(cfg: Config) -> Client:
     password = getpass(f"Instagram password for @{cfg.username}: ")
-    verification_code = input("2FA code (press Enter if not needed): ").strip() or None
+    verification_code = input("2FA code (press Enter if not needed): ").strip()
 
     cfg.session_file.parent.mkdir(parents=True, exist_ok=True)
     cl = _new_client(cfg)
-    setattr(  # noqa: B010 - instagrapi's annotation incorrectly includes `self` here.
-        cl, "challenge_code_handler", lambda username, choice=None: _challenge_handler(username, choice)
-    )
+    cl.challenge_code_handler = _challenge_handler
 
     if cfg.session_file.exists():
-        settings = cl.load_settings(cfg.session_file)
-        cl.set_settings(settings)
+        # load_settings() already calls set_settings() on instagrapi 3.2.x.
+        cl.load_settings(cfg.session_file)
         cl.set_retry_config(request_timeout=0)
 
-    cl.login(cfg.username, password, verification_code=verification_code or "")
+    cl.login(cfg.username, password, verification_code=verification_code)
     cl.dump_settings(cfg.session_file)
     return cl
 
@@ -48,11 +45,8 @@ def load_session(cfg: Config) -> Client:
             f"Session file not found: {cfg.session_file}. Run `ig-archive login` first."
         )
     cl = _new_client(cfg)
-    setattr(  # noqa: B010 - instagrapi's annotation incorrectly includes `self` here.
-        cl, "challenge_code_handler", lambda username, choice=None: False
-    )
-    settings = cl.load_settings(cfg.session_file)
-    cl.set_settings(settings)
+    cl.challenge_code_handler = lambda username, choice=None: False
+    cl.load_settings(cfg.session_file)
     cl.set_retry_config(request_timeout=0)
     account = cl.account_info()
     if account.username.casefold() != cfg.username.casefold():
