@@ -107,7 +107,15 @@ def archive_stories(cl: Client, cfg: Config, db: ArchiveDB) -> int:
             if db.has_seen("story", key):
                 continue
             folder = _target_dir(cfg, username, "stories", getattr(story, "taken_at", None))
-            path = cl.story_download(story.pk, folder=folder)
+            # user_stories() already returned the media URL; avoid a second
+            # story_info() request in story_download() when possible.
+            url = story.thumbnail_url if int(story.media_type) == 1 else story.video_url
+            if url:
+                path = cl.story_download_by_url(
+                    str(url), filename=str(story.pk), folder=folder
+                )
+            else:
+                path = cl.story_download(story.pk, filename=str(story.pk), folder=folder)
             _write_metadata(folder, f"{story.pk}.story", story, cfg.save_metadata)
             db.mark_seen("story", key, username, path)
             archived += 1
