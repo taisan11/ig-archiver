@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import re
 import sqlite3
+from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlsplit
@@ -117,7 +118,7 @@ def create_handler(database: Path, archive_root: Path) -> type[BaseHTTPRequestHa
                 args.append(username)
             where = " WHERE " + " AND ".join(filters) if filters else ""
             try:
-                with _db_connection(database) as con:
+                with closing(_db_connection(database)) as con:
                     count = con.execute("SELECT COUNT(*) FROM seen" + where, args).fetchone()[0]
                     rows = con.execute(
                         "SELECT kind, item_key, username, archived_at, path FROM seen"
@@ -197,7 +198,7 @@ def create_handler(database: Path, archive_root: Path) -> type[BaseHTTPRequestHa
                 self._text(404, "Not found", head)
                 return
             try:
-                with _db_connection(database) as con:
+                with closing(_db_connection(database)) as con:
                     row = con.execute(
                         "SELECT path FROM seen WHERE kind=? AND item_key=?", (kind, item_key)
                     ).fetchone()
